@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Planner - ApolloAI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/typed.js/2.0.12/typed.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --primary-navy: #1a2332;
+            --secondary-sage: #7a8471;
+            --accent-copper: #b8860b;
+            --bg-ivory: #faf9f6;
+            --text-charcoal: #2c2c2c;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-ivory);
+            color: var(--text-charcoal);
+        }
+        
+        .neural-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.2;
+        }
+        
+        .timer-circle {
+            transform: rotate(-90deg);
+            transition: all 0.3s ease;
+        }
+        
+        .timer-progress {
+            transition: stroke-dashoffset 1s linear;
+        }
+        
+        .study-card {
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7));
+            backdrop-filter: blur(10px);
+        }
+        
+        .study-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(26, 35, 50, 0.1);
+        }
+        
+        .technique-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .technique-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 25px rgba(186, 134, 11, 0.2);
+        }
+        
+        .technique-card.active {
+            background: linear-gradient(135deg, var(--accent-copper), #d4af37);
+            color: white;
+        }
+        
+        .resource-item {
+            transition: all 0.3s ease;
+        }
+        
+        .resource-item:hover {
+            transform: translateX(5px);
+            background-color: rgba(186, 134, 11, 0.05);
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .focus-mode {
+            background: linear-gradient(135deg, #1a2332, #2c3e50);
+            color: white;
+        }
+        
+        .break-mode {
+            background: linear-gradient(135deg, #7a8471, #95a5a6);
+            color: white;
+        }
+        
+        .session-complete {
+            background: linear-gradient(135deg, #b8860b, #d4af37);
+            color: white;
+        }
+        
+        .splide__slide img {
+            border-radius: 12px;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+    <!-- Neural Network Background -->
+    <div id="neural-bg" class="neural-bg"></div>
+    
+    <!-- Navigation -->
+    <nav class="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-900 to-amber-600 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-lg">A</span>
+                    </div>
+                    <h1 class="text-xl font-bold text-gray-900">ApolloAI</h1>
+                </div>
+                
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="index.html" class="text-gray-600 hover:text-gray-900 transition-colors">Dashboard</a>
+                    <a href="study.html" class="text-gray-900 font-medium border-b-2 border-amber-600 pb-1">Study</a>
+                    <a href="settings.html" class="text-gray-600 hover:text-gray-900 transition-colors">Settings</a>
+                    <div class="flex items-center space-x-2 bg-gray-100 rounded-lg px-3 py-2">
+                        <img src="resources/user-avatars/academic-avatars.jpg" alt="User" class="w-6 h-6 rounded-full object-cover">
+                        <span class="text-sm font-medium">Student</span>
+                    </div>
+                </div>
+                
+                <button class="md:hidden p-2 rounded-lg hover:bg-gray-100">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header Section -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-900 mb-4">Study Planner</h1>
+            <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                Optimize your learning with AI-powered study sessions, personalized techniques, and comprehensive resources.
+            </p>
+        </div>
+
+        <!-- Study Session Setup -->
+        <div class="grid lg:grid-cols-3 gap-8 mb-12">
+            <!-- Timer Section -->
+            <div class="lg:col-span-2">
+                <div class="study-card rounded-2xl p-8 shadow-lg">
+                    <div class="text-center mb-8">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-4">Study Timer</h2>
+                        
+                        <!-- Timer Display -->
+                        <div class="relative inline-block mb-6">
+                            <svg class="timer-circle w-48 h-48" viewBox="0 0 200 200">
+                                <circle cx="100" cy="100" r="90" stroke="#e5e7eb" stroke-width="8" fill="none"/>
+                                <circle id="timer-progress" cx="100" cy="100" r="90" stroke="#b8860b" stroke-width="8" 
+                                        fill="none" class="timer-progress" 
+                                        stroke-dasharray="565.48" stroke-dashoffset="565.48"/>
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="text-center">
+                                    <div id="timer-display" class="text-4xl font-bold text-gray-900">25:00</div>
+                                    <div id="timer-label" class="text-sm text-gray-600 mt-1">Focus Session</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Timer Controls -->
+                        <div class="flex justify-center space-x-4 mb-6">
+                            <button id="start-timer" class="bg-green-500 hover:bg-green-600 text-white px-8 py-3 rounded-xl font-semibold transition-colors">
+                                Start
+                            </button>
+                            <button id="pause-timer" class="bg-yellow-500 hover:bg-yellow-600 text-white px-8 py-3 rounded-xl font-semibold transition-colors" disabled>
+                                Pause
+                            </button>
+                            <button id="reset-timer" class="bg-red-500 hover:bg-red-600 text-white px-8 py-3 rounded-xl font-semibold transition-colors">
+                                Reset
+                            </button>
+                        </div>
+                        
+                        <!-- Session Stats -->
+                        <div class="grid grid-cols-3 gap-4 text-center">
+                            <div>
+                                <div class="text-2xl font-bold text-gray-900" id="sessions-today">0</div>
+                                <div class="text-sm text-gray-600">Sessions Today</div>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-bold text-gray-900" id="total-focus">0h</div>
+                                <div class="text-sm text-gray-600">Focus Time</div>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-bold text-gray-900" id="streak-count">12</div>
+                                <div class="text-sm text-gray-600">Day Streak</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Study Settings -->
+            <div class="space-y-6">
+                <!-- Timer Settings -->
+                <div class="study-card rounded-2xl p-6 shadow-lg">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">Timer Settings</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Study Duration</label>
+                            <select id="study-duration" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500">
+                                <option value="25">25 minutes (Pomodoro)</option>
+                                <option value="30">30 minutes</option>
+                                <option value="45">45 minutes</option>
+                                <option value="60">60 minutes</option>
+                                <option value="90">90 minutes</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Break Duration</label>
+                            <select id="break-duration" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500">
+                                <option value="5">5 minutes</option>
+                                <option value="10">10 minutes</option>
+                                <option value="15">15 minutes</option>
+                                <option value="20">20 minutes</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Long Break Duration</label>
+                            <select id="long-break-duration" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500">
+                                <option value="15">15 minutes</option>
+                                <option value="20">20 minutes</option>
+                                <option value="25">25 minutes</option>
+                                <option value="30">30 minutes</option>
+                            </select>
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium text-gray-700">Auto-start breaks</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="auto-break" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="study-card rounded-2xl p-6 shadow-lg">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">Quick Actions</h3>
+                    
+                    <div class="space-y-3">
+                        <button id="skip-break" class="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                            Skip Break
+                        </button>
+                        <button id="end-session" class="w-full bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                            End Session
+                        </button>
+                        <button id="focus-mode" class="w-full bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                            Focus Mode
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Study Techniques -->
+        <div class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Study Techniques</h2>
+            
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="technique-card bg-white rounded-2xl p-6 shadow-lg border-2 border-transparent" data-technique="pomodoro">
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900 mb-2">Pomodoro Technique</h3>
+                        <p class="text-gray-600 text-sm">25-minute focused sessions with 5-minute breaks. Perfect for maintaining concentration and preventing burnout.</p>
+                    </div>
+                </div>
+                
+                <div class="technique-card bg-white rounded-2xl p-6 shadow-lg border-2 border-transparent" data-technique="spaced">
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900 mb-2">Spaced Repetition</h3>
+                        <p class="text-gray-600 text-sm">Review material at increasing intervals. Scientifically proven to improve long-term retention and memory consolidation.</p>
+                    </div>
+                </div>
+                
+                <div class="technique-card bg-white rounded-2xl p-6 shadow-lg border-2 border-transparent" data-technique="feynman">
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900 mb-2">Feynman Technique</h3>
+                        <p class="text-gray-600 text-sm">Explain concepts in simple terms. Identify gaps in understanding and reinforce learning through teaching.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Study Resources -->
+        <div class="grid lg:grid-cols-2 gap-8">
+            <!-- Subject Resources -->
+            <div class="study-card rounded-2xl p-6 shadow-lg">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">Study Resources</h2>
+                    <select id="subject-filter" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500">
+                        <option value="all">All Subjects</option>
+                        <option value="cs">Computer Science</option>
+                        <option value="math">Mathematics</option>
+                        <option value="physics">Physics</option>
+                        <option value="chemistry">Chemistry</option>
+                        <option value="biology">Biology</option>
+                        <option value="history">History</option>
+                        <option value="english">English</option>
+                    </select>
+                </div>
+                
+                <div class="space-y-4" id="resources-list">
+                    <div class="resource-item p-4 rounded-xl border border-gray-200 hover:border-amber-300">
+                        <div class="flex items-start space-x-3">
+                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-gray-900">Machine Learning Fundamentals</h3>
+                                <p class="text-gray-600 text-sm mt-1">Comprehensive guide to ML concepts, algorithms, and applications</p>
+                                <div class="flex items-center mt-2 space-x-2">
+                                    <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Computer Science</span>
+                                    <span class="text-xs text-gray-500">45 min read</span>
+                                </div>
+                            </div>
+                            <button class="text-amber-600 hover:text-amber-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="resource-item p-4 rounded-xl border border-gray-200 hover:border-amber-300">
+                        <div class="flex items-start space-x-3">
+                            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-gray-900">Calculus Problem Solving</h3>
+                                <p class="text-gray-600 text-sm mt-1">Video series covering derivatives, integrals, and applications</p>
+                                <div class="flex items-center mt-2 space-x-2">
+                                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Mathematics</span>
+                                    <span class="text-xs text-gray-500">2 hour video</span>
+                                </div>
+                            </div>
+                            <button class="text-amber-600 hover:text-amber-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="resource-item p-4 rounded-xl border border-gray-200 hover:border-amber-300">
+                        <div class="flex items-start space-x-3">
+                            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-gray-900">World History Timeline</h3>
+                                <p class="text-gray-600 text-sm mt-1">Interactive timeline of major historical events and civilizations</p>
+                                <div class="flex items-center mt-2 space-x-2">
+                                    <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">History</span>
+                                    <span class="text-xs text-gray-500">Interactive</span>
+                                </div>
+                            </div>
+                            <button class="text-amber-600 hover:text-amber-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Session Analytics -->
+            <div class="study-card rounded-2xl p-6 shadow-lg">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">Session Analytics</h2>
+                
+                <div id="session-chart" class="h-64 mb-6"></div>
+                
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                        <span class="text-gray-700">Today's Focus Time</span>
+                        <span class="font-bold text-gray-900">4h 32m</span>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                        <span class="text-gray-700">Weekly Average</span>
+                        <span class="font-bold text-gray-900">5h 15m</span>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                        <span class="text-gray-700">Productivity Score</span>
+                        <span class="font-bold text-green-600">87%</span>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                        <span class="text-gray-700">Best Study Time</span>
+                        <span class="font-bold text-gray-900">2-4 PM</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Focus Mode Overlay -->
+    <div id="focus-overlay" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen">
+            <div class="text-center text-white">
+                <h2 class="text-4xl font-bold mb-4">Focus Mode Active</h2>
+                <p class="text-xl mb-8">Stay focused on your study session</p>
+                <div id="focus-timer" class="text-6xl font-bold mb-8">25:00</div>
+                <button id="exit-focus" class="bg-amber-600 hover:bg-amber-700 text-white px-8 py-3 rounded-xl font-semibold">
+                    Exit Focus Mode
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Study Timer Class
+        class StudyTimer {
+            constructor() {
+                this.isRunning = false;
+                this.isPaused = false;
+                this.currentSession = 'focus'; // 'focus', 'break', 'longBreak'
+                this.timeRemaining = 25 * 60; // seconds
+                this.sessionsCompleted = 0;
+                this.totalFocusTime = 0;
+                this.interval = null;
+                
+                this.init();
+            }
+            
+            init() {
+                this.bindEvents();
+                this.updateDisplay();
+                this.initChart();
+            }
+            
+            bindEvents() {
+                document.getElementById('start-timer').addEventListener('click', () => this.start());
+                document.getElementById('pause-timer').addEventListener('click', () => this.pause());
+                document.getElementById('reset-timer').addEventListener('click', () => this.reset());
+                document.getElementById('skip-break').addEventListener('click', () => this.skipBreak());
+                document.getElementById('end-session').addEventListener('click', () => this.endSession());
+                document.getElementById('focus-mode').addEventListener('click', () => this.toggleFocusMode());
+                document.getElementById('exit-focus').addEventListener('click', () => this.exitFocusMode());
+                
+                // Settings
+                document.getElementById('study-duration').addEventListener('change', (e) => {
+                    if (!this.isRunning) {
+                        this.timeRemaining = parseInt(e.target.value) * 60;
+                        this.updateDisplay();
+                    }
+                });
+                
+                // Technique selection
+                document.querySelectorAll('.technique-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        document.querySelectorAll('.technique-card').forEach(c => c.classList.remove('active'));
+                        card.classList.add('active');
+                        this.applyTechnique(card.dataset.technique);
+                    });
+                });
+            }
+            
+            start() {
+                if (this.isPaused) {
+                    this.isPaused = false;
+                } else {
+                    this.getSettings();
+                }
+                
+                this.isRunning = true;
+                this.interval = setInterval(() => this.tick(), 1000);
+                
+                document.getElementById('start-timer').disabled = true;
+                document.getElementById('pause-timer').disabled = false;
+                
+                this.updateButtonStates();
+            }
+            
+            pause() {
+                this.isPaused = true;
+                this.isRunning = false;
+                clearInterval(this.interval);
+                
+                document.getElementById('start-timer').disabled = false;
+                document.getElementById('pause-timer').disabled = true;
+                
+                this.updateButtonStates();
+            }
+            
+            reset() {
+                this.isRunning = false;
+                this.isPaused = false;
+                clearInterval(this.interval);
+                
+                this.getSettings();
+                this.currentSession = 'focus';
+                
+                document.getElementById('start-timer').disabled = false;
+                document.getElementById('pause-timer').disabled = true;
+                
+                this.updateDisplay();
+                this.updateButtonStates();
+            }
+            
+            tick() {
+                this.timeRemaining--;
+                this.updateDisplay();
+                this.updateProgress();
+                
+                if (this.timeRemaining <= 0) {
+                    this.completeSession();
+                }
+            }
+            
+            completeSession() {
+                clearInterval(this.interval);
+                this.isRunning = false;
+                
+                if (this.currentSession === 'focus') {
+                    this.sessionsCompleted++;
+                    this.totalFocusTime += parseInt(document.getElementById('study-duration').value);
+                    this.updateStats();
+                    
+                    // Determine break type
+                    if (this.sessionsCompleted % 4 === 0) {
+                        this.startLongBreak();
+                    } else {
+                        this.startBreak();
+                    }
+                } else {
+                    this.currentSession = 'focus';
+                    this.getSettings();
+                    this.updateDisplay();
+                }
+                
+                this.playNotification();
+                document.getElementById('start-timer').disabled = false;
+                document.getElementById('pause-timer').disabled = true;
+            }
+            
+            startBreak() {
+                this.currentSession = 'break';
+                this.timeRemaining = parseInt(document.getElementById('break-duration').value) * 60;
+                this.updateDisplay();
+                
+                if (document.getElementById('auto-break').checked) {
+                    setTimeout(() => this.start(), 1000);
+                }
+            }
+            
+            startLongBreak() {
+                this.currentSession = 'longBreak';
+                this.timeRemaining = parseInt(document.getElementById('long-break-duration').value) * 60;
+                this.updateDisplay();
+                
+                if (document.getElementById('auto-break').checked) {
+                    setTimeout(() => this.start(), 1000);
+                }
+            }
+            
+            skipBreak() {
+                if (this.currentSession !== 'focus') {
+                    this.currentSession = 'focus';
+                    this.getSettings();
+                    this.updateDisplay();
+                }
+            }
+            
+            endSession() {
+                this.reset();
+                this.sessionsCompleted = 0;
+                this.updateStats();
+            }
+            
+            getSettings() {
+                const studyDuration = parseInt(document.getElementById('study-duration').value);
+                this.timeRemaining = studyDuration * 60;
+            }
+            
+            updateDisplay() {
+                const minutes = Math.floor(this.timeRemaining / 60);
+                const seconds = this.timeRemaining % 60;
+                const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                document.getElementById('timer-display').textContent = display;
+                document.getElementById('focus-timer').textContent = display;
+                
+                const labels = {
+                    focus: 'Focus Session',
+                    break: 'Break Time',
+                    longBreak: 'Long Break'
+                };
+                
+                document.getElementById('timer-label').textContent = labels[this.currentSession];
+                
+                // Update body class for different modes
+                document.body.className = document.body.className.replace(/\b(focus-mode|break-mode|session-complete)\b/g, '');
+                
+                if (this.currentSession === 'focus' && this.isRunning) {
+                    document.body.classList.add('focus-mode');
+                } else if (this.currentSession !== 'focus' && this.isRunning) {
+                    document.body.classList.add('break-mode');
+                }
+            }
+            
+            updateProgress() {
+                let totalTime;
+                switch (this.currentSession) {
+                    case 'focus':
+                        totalTime = parseInt(document.getElementById('study-duration').value) * 60;
+                        break;
+                    case 'break':
+                        totalTime = parseInt(document.getElementById('break-duration').value) * 60;
+                        break;
+                    case 'longBreak':
+                        totalTime = parseInt(document.getElementById('long-break-duration').value) * 60;
+                        break;
+                }
+                
+                const progress = (totalTime - this.timeRemaining) / totalTime;
+                const circumference = 565.48;
+                const offset = circumference - (progress * circumference);
+                
+                document.getElementById('timer-progress').style.strokeDashoffset = offset;
+            }
+            
+            updateStats() {
+                document.getElementById('sessions-today').textContent = this.sessionsCompleted;
+                document.getElementById('total-focus').textContent = `${this.totalFocusTime}h`;
+            }
+            
+            updateButtonStates() {
+                const startBtn = document.getElementById('start-timer');
+                const pauseBtn = document.getElementById('pause-timer');
+                
+                if (this.isRunning) {
+                    startBtn.textContent = 'Resume';
+                    startBtn.disabled = true;
+                    pauseBtn.disabled = false;
+                } else if (this.isPaused) {
+                    startBtn.textContent = 'Resume';
+                    startBtn.disabled = false;
+                    pauseBtn.disabled = true;
+                } else {
+                    startBtn.textContent = 'Start';
+                    startBtn.disabled = false;
+                    pauseBtn.disabled = true;
+                }
+            }
+            
+            toggleFocusMode() {
+                document.getElementById('focus-overlay').classList.remove('hidden');
+                anime({
+                    targets: '#focus-overlay',
+                    opacity: [0, 1],
+                    duration: 500,
+                    easing: 'easeOutQuart'
+                });
+            }
+            
+            exitFocusMode() {
+                anime({
+                    targets: '#focus-overlay',
+                    opacity: [1, 0],
+                    duration: 500,
+                    easing: 'easeOutQuart',
+                    complete: () => {
+                        document.getElementById('focus-overlay').classList.add('hidden');
+                    }
+                });
+            }
+            
+            applyTechnique(technique) {
+                const settings = {
+                    pomodoro: { study: 25, break: 5, longBreak: 15 },
+                    spaced: { study: 45, break: 10, longBreak: 20 },
+                    feynman: { study: 30, break: 10, longBreak: 15 }
+                };
+                
+                if (settings[technique]) {
+                    document.getElementById('study-duration').value = settings[technique].study;
+                    document.getElementById('break-duration').value = settings[technique].break;
+                    document.getElementById('long-break-duration').value = settings[technique].longBreak;
+                    
+                    if (!this.isRunning) {
+                        this.timeRemaining = settings[technique].study * 60;
+                        this.updateDisplay();
+                    }
+                }
+            }
+            
+            playNotification() {
+                // Play a simple beep sound
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+            }
+            
+            initChart() {
+                const chartElement = document.getElementById('session-chart');
+                if (!chartElement) return;
+
+                const chart = echarts.init(chartElement);
+                
+                const option = {
+                    color: ['#1a2332', '#7a8471', '#b8860b'],
+                    tooltip: {
+                        trigger: 'axis'
+                    },
+                    legend: {
+                        data: ['Focus Sessions', 'Break Time', 'Productivity']
+                    },
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '3%',
+                        containLabel: true
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                    },
+                    yAxis: {
+                        type: 'value'
+                    },
+                    series: [
+                        {
+                            name: 'Focus Sessions',
+                            type: 'bar',
+                            data: [8, 6, 9, 7, 5, 4, 6]
+                        },
+                        {
+                            name: 'Break Time',
+                            type: 'line',
+                            data: [45, 35, 50, 40, 30, 25, 35]
+                        },
+                        {
+                            name: 'Productivity',
+                            type: 'line',
+                            smooth: true,
+                            data: [85, 78, 92, 88, 82, 75, 87]
+                        }
+                    ]
+                };
+                
+                chart.setOption(option);
+                
+                window.addEventListener('resize', () => {
+                    chart.resize();
+                });
+            }
+        }
+        
+        // Initialize timer when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            window.studyTimer = new StudyTimer();
+        });
+    </script>
+</body>
+</html>

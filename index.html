@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ApolloAI - Smart Educational Scheduling</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/typed.js/2.0.12/typed.min.js"></script>
+    <script src="https://unpkg.com/splitting@1.0.6/dist/splitting.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/splitting@1.0.6/dist/splitting.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --primary-navy: #1a2332;
+            --secondary-sage: #7a8471;
+            --accent-copper: #b8860b;
+            --bg-ivory: #faf9f6;
+            --text-charcoal: #2c2c2c;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-ivory);
+            color: var(--text-charcoal);
+        }
+        
+        .neural-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.3;
+        }
+        
+        .hero-text {
+            background: linear-gradient(135deg, var(--primary-navy), var(--accent-copper));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-8px) rotateX(5deg);
+            box-shadow: 0 20px 40px rgba(26, 35, 50, 0.15);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-navy), var(--secondary-sage));
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(26, 35, 50, 0.3);
+        }
+        
+        .assignment-item {
+            border-left: 4px solid var(--accent-copper);
+            transition: all 0.3s ease;
+        }
+        
+        .assignment-item:hover {
+            border-left-color: var(--primary-navy);
+            background-color: rgba(186, 134, 11, 0.05);
+        }
+        
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+        
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.35s;
+            transform-origin: 50% 50%;
+        }
+        
+        .ai-typing {
+            border-right: 2px solid var(--accent-copper);
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50% { border-color: var(--accent-copper); }
+            51%, 100% { border-color: transparent; }
+        }
+        
+        .calendar-day {
+            transition: all 0.2s ease;
+        }
+        
+        .calendar-day:hover {
+            background-color: rgba(186, 134, 11, 0.1);
+            transform: scale(1.05);
+        }
+        
+        .achievement-badge {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Neural Network Background -->
+    <div id="neural-bg" class="neural-bg"></div>
+    
+    <!-- Navigation -->
+    <nav class="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-900 to-amber-600 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-lg">A</span>
+                    </div>
+                    <h1 class="text-xl font-bold text-gray-900">ApolloAI</h1>
+                </div>
+                
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="index.html" class="text-gray-900 font-medium border-b-2 border-amber-600 pb-1">Dashboard</a>
+                    <a href="study.html" class="text-gray-600 hover:text-gray-900 transition-colors">Study</a>
+                    <a href="settings.html" class="text-gray-600 hover:text-gray-900 transition-colors">Settings</a>
+                    <div class="flex items-center space-x-2 bg-gray-100 rounded-lg px-3 py-2">
+                        <img src="resources/user-avatars/academic-avatars.jpg" alt="User" class="w-6 h-6 rounded-full object-cover">
+                        <span class="text-sm font-medium">Student</span>
+                    </div>
+                </div>
+                
+                <button class="md:hidden p-2 rounded-lg hover:bg-gray-100">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="pt-16 pb-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div class="space-y-8">
+                    <div class="space-y-4">
+                        <h1 class="text-5xl lg:text-6xl font-bold hero-text" data-splitting>
+                            AI-Powered Academic Success
+                        </h1>
+                        <p class="text-xl text-gray-600 leading-relaxed">
+                            Let ApolloAI optimize your study schedule, manage assignments, and guide you toward academic excellence with intelligent time management.
+                        </p>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <button id="add-assignment-btn" class="btn-primary text-white px-8 py-4 rounded-xl font-semibold text-lg">
+                            Add Assignment
+                        </button>
+                        <button class="border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-xl font-semibold text-lg hover:border-gray-400 transition-colors">
+                            View Analytics
+                        </button>
+                    </div>
+                    
+                    <!-- AI Assistant Indicator -->
+                    <div class="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200">
+                        <div class="flex items-center space-x-3 mb-3">
+                            <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                            <span class="font-semibold text-gray-800">ApolloAI Assistant</span>
+                        </div>
+                        <p class="text-gray-600 italic">
+                            <span id="ai-message">Analyzing your schedule to optimize study time...</span>
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="relative">
+                    <img src="resources/hero-ai-education.jpg" alt="AI Education" class="rounded-2xl shadow-2xl w-full h-96 object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-2xl"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dashboard Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+            <div class="bg-white rounded-2xl p-6 shadow-lg card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm font-medium">Active Assignments</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-1">7</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-2xl p-6 shadow-lg card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm font-medium">Study Hours Today</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-1">4.5h</p>
+                    </div>
+                    <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-2xl p-6 shadow-lg card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm font-medium">Completion Rate</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-1">92%</p>
+                    </div>
+                    <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-2xl p-6 shadow-lg card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm font-medium">Study Streak</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-1">12 days</p>
+                    </div>
+                    <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid lg:grid-cols-3 gap-8">
+            <!-- Left Column: Assignments & Calendar -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Upcoming Assignments -->
+                <div class="bg-white rounded-2xl p-6 shadow-lg">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Upcoming Assignments</h2>
+                        <button class="text-amber-600 hover:text-amber-700 font-medium">View All</button>
+                    </div>
+                    
+                    <div class="space-y-4" id="assignments-list">
+                        <div class="assignment-item bg-gray-50 rounded-xl p-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex-1">
+                                    <h3 class="font-semibold text-gray-900">Machine Learning Research Paper</h3>
+                                    <p class="text-gray-600 text-sm mt-1">Computer Science • Due in 3 days</p>
+                                    <div class="flex items-center mt-2 space-x-4">
+                                        <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">High Priority</span>
+                                        <span class="text-xs text-gray-500">Estimated: 8 hours</span>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm font-medium text-gray-900">Dec 15</p>
+                                    <div class="mt-2">
+                                        <div class="w-16 h-16">
+                                            <svg class="progress-ring w-16 h-16">
+                                                <circle cx="32" cy="32" r="28" stroke="#e5e7eb" stroke-width="4" fill="transparent"/>
+                                                <circle cx="32" cy="32" r="28" stroke="#b8860b" stroke-width="4" fill="transparent" 
+                                                        stroke-dasharray="175.929" stroke-dashoffset="52.779" class="progress-ring-circle"/>
+                                            </svg>
+                                            <div class="absolute inset-0 flex items-center justify-center">
+                                                <span class="text-xs font-bold text-gray-700">70%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="assignment-item bg-gray-50 rounded-xl p-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex-1">
+                                    <h3 class="font-semibold text-gray-900">Calculus Problem Set #12</h3>
+                                    <p class="text-gray-600 text-sm mt-1">Mathematics • Due tomorrow</p>
+                                    <div class="flex items-center mt-2 space-x-4">
+                                        <span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">Medium Priority</span>
+                                        <span class="text-xs text-gray-500">Estimated: 2 hours</span>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm font-medium text-gray-900">Dec 13</p>
+                                    <div class="mt-2">
+                                        <div class="w-16 h-16">
+                                            <svg class="progress-ring w-16 h-16">
+                                                <circle cx="32" cy="32" r="28" stroke="#e5e7eb" stroke-width="4" fill="transparent"/>
+                                                <circle cx="32" cy="32" r="28" stroke="#7a8471" stroke-width="4" fill="transparent" 
+                                                        stroke-dasharray="175.929" stroke-dashoffset="123.15" class="progress-ring-circle"/>
+                                            </svg>
+                                            <div class="absolute inset-0 flex items-center justify-center">
+                                                <span class="text-xs font-bold text-gray-700">30%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="assignment-item bg-gray-50 rounded-xl p-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex-1">
+                                    <h3 class="font-semibold text-gray-900">History Essay: Renaissance Impact</h3>
+                                    <p class="text-gray-600 text-sm mt-1">History • Due in 5 days</p>
+                                    <div class="flex items-center mt-2 space-x-4">
+                                        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Low Priority</span>
+                                        <span class="text-xs text-gray-500">Estimated: 5 hours</span>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm font-medium text-gray-900">Dec 17</p>
+                                    <div class="mt-2">
+                                        <div class="w-16 h-16">
+                                            <svg class="progress-ring w-16 h-16">
+                                                <circle cx="32" cy="32" r="28" stroke="#e5e7eb" stroke-width="4" fill="transparent"/>
+                                                <circle cx="32" cy="32" r="28" stroke="#059669" stroke-width="4" fill="transparent" 
+                                                        stroke-dasharray="175.929" stroke-dashoffset="158.336" class="progress-ring-circle"/>
+                                            </svg>
+                                            <div class="absolute inset-0 flex items-center justify-center">
+                                                <span class="text-xs font-bold text-gray-700">10%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calendar View -->
+                <div class="bg-white rounded-2xl p-6 shadow-lg">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Study Calendar</h2>
+                        <div class="flex items-center space-x-2">
+                            <button class="p-2 hover:bg-gray-100 rounded-lg">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                </svg>
+                            </button>
+                            <span class="font-semibold text-gray-900">December 2024</span>
+                            <button class="p-2 hover:bg-gray-100 rounded-lg">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-7 gap-2 mb-4">
+                        <div class="text-center text-sm font-medium text-gray-600 py-2">Sun</div>
+                        <div class="text-center text-sm font-medium text-gray-600 py-2">Mon</div>
+                        <div class="text-center text-sm font-medium text-gray-600 py-2">Tue</div>
+                        <div class="text-center text-sm font-medium text-gray-600 py-2">Wed</div>
+                        <div class="text-center text-sm font-medium text-gray-600 py-2">Thu</div>
+                        <div class="text-center text-sm font-medium text-gray-600 py-2">Fri</div>
+                        <div class="text-center text-sm font-medium text-gray-600 py-2">Sat</div>
+                    </div>
+                    
+                    <div class="grid grid-cols-7 gap-2" id="calendar-grid">
+                        <!-- Calendar days will be generated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Analytics & Achievements -->
+            <div class="space-y-8">
+                <!-- Performance Analytics -->
+                <div class="bg-white rounded-2xl p-6 shadow-lg">
+                    <h2 class="text-xl font-bold text-gray-900 mb-6">Performance Analytics</h2>
+                    <div id="performance-chart" class="h-64"></div>
+                </div>
+                
+                <!-- AI Recommendations -->
+                <div class="bg-white rounded-2xl p-6 shadow-lg">
+                    <h2 class="text-xl font-bold text-gray-900 mb-6">AI Recommendations</h2>
+                    <div class="space-y-4">
+                        <div class="bg-blue-50 rounded-xl p-4 border-l-4 border-blue-500">
+                            <h3 class="font-semibold text-blue-900">Optimize Study Time</h3>
+                            <p class="text-blue-700 text-sm mt-1">Your peak focus hours are 2-4 PM. Consider scheduling difficult subjects during this time.</p>
+                        </div>
+                        <div class="bg-green-50 rounded-xl p-4 border-l-4 border-green-500">
+                            <h3 class="font-semibold text-green-900">Break Reminder</h3>
+                            <p class="text-green-700 text-sm mt-1">You've been studying for 90 minutes. Take a 15-minute break to maintain productivity.</p>
+                        </div>
+                        <div class="bg-amber-50 rounded-xl p-4 border-l-4 border-amber-500">
+                            <h3 class="font-semibold text-amber-900">Assignment Priority</h3>
+                            <p class="text-amber-700 text-sm mt-1">The ML research paper needs immediate attention. Allocate 2 hours today to stay on track.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Achievements -->
+                <div class="bg-white rounded-2xl p-6 shadow-lg">
+                    <h2 class="text-xl font-bold text-gray-900 mb-6">Recent Achievements</h2>
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-3 achievement-badge">
+                            <img src="resources/achievement-badges/academic-badges.jpg" alt="Study Streak" class="w-12 h-12 rounded-full object-cover">
+                            <div>
+                                <h3 class="font-semibold text-gray-900">Study Streak Master</h3>
+                                <p class="text-gray-600 text-sm">12 days of consistent studying</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <img src="resources/achievement-badges/academic-badges.jpg" alt="Time Management" class="w-12 h-12 rounded-full object-cover">
+                            <div>
+                                <h3 class="font-semibold text-gray-900">Time Management Pro</h3>
+                                <p class="text-gray-600 text-sm">Completed 50 assignments on time</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <img src="resources/achievement-badges/academic-badges.jpg" alt="Subject Expert" class="w-12 h-12 rounded-full object-cover">
+                            <div>
+                                <h3 class="font-semibold text-gray-900">Computer Science Expert</h3>
+                                <p class="text-gray-600 text-sm">Top 10% in CS assignments</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Assignment Modal -->
+    <div id="assignment-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-2xl p-8 max-w-md w-full">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">Add New Assignment</h2>
+                    <button id="close-modal" class="text-gray-500 hover:text-gray-700">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <form id="assignment-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Assignment Title</label>
+                        <input type="text" id="assignment-title" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent" placeholder="Enter assignment title">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                        <select id="assignment-subject" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+                            <option value="">Select subject</option>
+                            <option value="Computer Science">Computer Science</option>
+                            <option value="Mathematics">Mathematics</option>
+                            <option value="History">History</option>
+                            <option value="Physics">Physics</option>
+                            <option value="Chemistry">Chemistry</option>
+                            <option value="Biology">Biology</option>
+                            <option value="English">English</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
+                        <input type="date" id="assignment-date" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Estimated Hours</label>
+                        <input type="number" id="assignment-hours" min="0.5" step="0.5" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent" placeholder="Hours needed">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                        <select id="assignment-priority" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+                            <option value="low">Low Priority</option>
+                            <option value="medium">Medium Priority</option>
+                            <option value="high">High Priority</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex space-x-3 pt-4">
+                        <button type="button" id="cancel-assignment" class="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 btn-primary text-white px-6 py-3 rounded-xl font-medium">
+                            Add Assignment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>
