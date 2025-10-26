@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - ApolloAI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/typed.js/2.0.12/typed.min.js"></script>
+    <script src="https://unpkg.com/splitting@1.0.6/dist/splitting.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/splitting@1.0.6/dist/splitting.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --primary-navy: #1a2332;
+            --secondary-sage: #7a8471;
+            --accent-copper: #b8860b;
+            --bg-ivory: #faf9f6;
+            --text-charcoal: #2c2c2c;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-ivory);
+            color: var(--text-charcoal);
+        }
+        
+        .neural-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.2;
+        }
+        
+        .auth-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.8));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 25px 50px rgba(26, 35, 50, 0.15);
+        }
+        
+        .role-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .role-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(186, 134, 11, 0.2);
+        }
+        
+        .role-card.selected {
+            background: linear-gradient(135deg, var(--accent-copper), #d4af37);
+            color: white;
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(186, 134, 11, 0.3);
+        }
+        
+        .form-step {
+            display: none;
+        }
+        
+        .form-step.active {
+            display: block;
+            animation: fadeInUp 0.5s ease;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .progress-bar {
+            transition: width 0.5s ease;
+        }
+        
+        .input-group {
+            position: relative;
+        }
+        
+        .input-group input:focus + label,
+        .input-group input:not(:placeholder-shown) + label {
+            transform: translateY(-1.5rem) scale(0.8);
+            color: var(--accent-copper);
+        }
+        
+        .input-group label {
+            position: absolute;
+            left: 1rem;
+            top: 0.75rem;
+            transition: all 0.3s ease;
+            pointer-events: none;
+            color: #6b7280;
+        }
+        
+        .password-strength {
+            height: 4px;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+        
+        .strength-weak { background-color: #ef4444; width: 33%; }
+        .strength-medium { background-color: #f59e0b; width: 66%; }
+        .strength-strong { background-color: #10b981; width: 100%; }
+        
+        .hero-text {
+            background: linear-gradient(135deg, var(--primary-navy), var(--accent-copper));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+<base target="_blank">
+</head>
+<body>
+    <!-- Neural Network Background -->
+    <div id="neural-bg"></div>
+    
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="auth-card rounded-3xl p-8 max-w-4xl w-full">
+            <div class="grid lg:grid-cols-2 gap-8">
+                <!-- Left Side - Hero Content -->
+                <div class="flex flex-col justify-center space-y-6">
+                    <div class="text-center lg:text-left">
+                        <div class="flex items-center justify-center lg:justify-start space-x-3 mb-6">
+                            <div class="w-12 h-12 bg-gradient-to-br from-blue-900 to-amber-600 rounded-xl flex items-center justify-center">
+                                <span class="text-white font-bold text-xl">A</span>
+                            </div>
+                            <h1 class="text-3xl font-bold text-gray-900">ApolloAI</h1>
+                        </div>
+                        
+                        <h2 class="text-4xl font-bold hero-text mb-4" data-splitting>
+                            Academic Excellence
+                        </h2>
+                        <p class="text-lg text-gray-600 leading-relaxed">
+                            Join thousands of students, teachers, and institutions using AI-powered tools to achieve academic success through intelligent scheduling and personalized learning.
+                        </p>
+                    </div>
+                    
+                    <!-- Features -->
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <span class="text-gray-700">AI-Powered Assignment Scheduling</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <span class="text-gray-700">Smart Study Timer & Techniques</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                </svg>
+                            </div>
+                            <span class="text-gray-700">Performance Analytics & Insights</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Stats -->
+                    <div class="grid grid-cols-3 gap-4 pt-4">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-gray-900">50K+</div>
+                            <div class="text-sm text-gray-600">Active Users</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-gray-900">95%</div>
+                            <div class="text-sm text-gray-600">Success Rate</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-gray-900">4.8</div>
+                            <div class="text-sm text-gray-600">User Rating</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Side - Auth Form -->
+                <div class="space-y-6">
+                    <!-- Progress Bar -->
+                    <div class="mb-6">
+                        <div class="flex justify-between text-sm text-gray-600 mb-2">
+                            <span>Registration Progress</span>
+                            <span id="progress-text">Step 1 of 3</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div id="progress-bar" class="progress-bar bg-gradient-to-r from-amber-500 to-amber-600 h-2 rounded-full" style="width: 33%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 1: Role Selection -->
+                    <div id="step-1" class="form-step active">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-6 text-center">Choose Your Role</h3>
+                        
+                        <div class="space-y-4">
+                            <div class="role-card bg-white rounded-2xl p-6 shadow-lg border-2 border-transparent" data-role="student">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                                        <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-lg font-bold text-gray-900">Student</h4>
+                                        <p class="text-gray-600 text-sm">Access personal scheduling, study tools, and progress tracking</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="role-card bg-white rounded-2xl p-6 shadow-lg border-2 border-transparent" data-role="teacher">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                                        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-lg font-bold text-gray-900">Teacher</h4>
+                                        <p class="text-gray-600 text-sm">Manage classes, create assignments, and monitor student progress</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="role-card bg-white rounded-2xl p-6 shadow-lg border-2 border-transparent" data-role="admin">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center">
+                                        <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-lg font-bold text-gray-900">Admin/Staff</h4>
+                                        <p class="text-gray-600 text-sm">System management, user oversight, and institutional analytics</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button id="next-step-1" class="w-full bg-gray-400 text-white py-3 rounded-xl font-semibold mt-6 cursor-not-allowed" disabled>
+                            Continue
+                        </button>
+                    </div>
+                    
+                    <!-- Step 2: Basic Information -->
+                    <div id="step-2" class="form-step">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-6 text-center">Basic Information</h3>
+                        
+                        <form id="basic-info-form" class="space-y-6">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="input-group">
+                                    <input type="text" id="first-name" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent" placeholder=" " required>
+                                    <label for="first-name">First Name</label>
+                                </div>
+                                <div class="input-group">
+                                    <input type="text" id="last-name" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent" placeholder=" " required>
+                                    <label for="last-name">Last Name</label>
+                                </div>
+                            </div>
+                            
+                            <div class="input-group">
+                                <input type="email" id="email" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent" placeholder=" " required>
+                                <label for="email">Email Address</label>
+                            </div>
+                            
+                            <div class="input-group">
+                                <input type="text" id="institution" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent" placeholder=" ">
+                                <label for="institution">Institution (Optional)</label>
+                            </div>
+                            
+                            <div class="input-group">
+                                <input type="text" id="major" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent" placeholder=" ">
+                                <label for="major">Major/Department (Optional)</label>
+                            </div>
+                            
+                            <div class="flex space-x-4">
+                                <button type="button" id="back-step-2" class="flex-1 bg-gray-300 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-400 transition-colors">
+                                    Back
+                                </button>
+                                <button type="button" id="next-step-2" class="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white py-3 rounded-xl font-semibold hover:from-amber-600 hover:to-amber-700 transition-colors">
+                                    Continue
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Step 3: Account Security -->
+                    <div id="step-3" class="form-step">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-6 text-center">Account Security</h3>
+                        
+                        <form id="security-form" class="space-y-6">
+                            <div class="input-group">
+                                <input type="password" id="password" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent" placeholder=" " required>
+                                <label for="password">Password</label>
+                                <button type="button" id="toggle-password" class="absolute right-3 top-3 text-gray-500 hover:text-gray-700">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            
+                            <div id="password-strength" class="hidden">
+                                <div class="flex justify-between text-sm text-gray-600 mb-1">
+                                    <span>Password Strength</span>
+                                    <span id="strength-text"></span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div id="strength-bar" class="password-strength rounded-full"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="input-group">
+                                <input type="password" id="confirm-password" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent" placeholder=" " required>
+                                <label for="confirm-password">Confirm Password</label>
+                            </div>
+                            
+                            <div class="space-y-3">
+                                <label class="flex items-start space-x-3 cursor-pointer">
+                                    <input type="checkbox" id="terms" class="mt-1 rounded border-gray-300 text-amber-600 focus:ring-amber-500" required>
+                                    <span class="text-sm text-gray-700">
+                                        I agree to the <a href="#" class="text-amber-600 hover:text-amber-700">Terms of Service</a> and <a href="#" class="text-amber-600 hover:text-amber-700">Privacy Policy</a>
+                                    </span>
+                                </label>
+                                
+                                <label class="flex items-start space-x-3 cursor-pointer">
+                                    <input type="checkbox" id="newsletter" class="mt-1 rounded border-gray-300 text-amber-600 focus:ring-amber-500">
+                                    <span class="text-sm text-gray-700">
+                                        I want to receive study tips and feature updates
+                                    </span>
+                                </label>
+                            </div>
+                            
+                            <div class="flex space-x-4">
+                                <button type="button" id="back-step-3" class="flex-1 bg-gray-300 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-400 transition-colors">
+                                    Back
+                                </button>
+                                <button type="submit" id="complete-registration" class="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white py-3 rounded-xl font-semibold hover:from-amber-600 hover:to-amber-700 transition-colors">
+                                    Create Account
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Login Form (Hidden by default) -->
+                    <div id="login-form" class="form-step">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-6 text-center">Welcome Back</h3>
+                        
+                        <form id="login-form-element" class="space-y-6">
+                            <div class="input-group">
+                                <input type="email" id="login-email" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent" placeholder=" " required>
+                                <label for="login-email">Email Address</label>
+                            </div>
+                            
+                            <div class="input-group">
+                                <input type="password" id="login-password" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent" placeholder=" " required>
+                                <label for="login-password">Password</label>
+                                <button type="button" id="toggle-login-password" class="absolute right-3 top-3 text-gray-500 hover:text-gray-700">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center space-x-2">
+                                    <input type="checkbox" id="remember-me" class="rounded border-gray-300 text-amber-600 focus:ring-amber-500">
+                                    <span class="text-sm text-gray-700">Remember me</span>
+                                </label>
+                                <a href="#" class="text-sm text-amber-600 hover:text-amber-700">Forgot password?</a>
+                            </div>
+                            
+                            <button type="submit" class="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-white py-3 rounded-xl font-semibold hover:from-amber-600 hover:to-amber-700 transition-colors">
+                                Sign In
+                            </button>
+                        </form>
+                        
+                        <div class="text-center mt-6">
+                            <p class="text-gray-600">
+                                Don't have an account? 
+                                <button id="show-register" class="text-amber-600 hover:text-amber-700 font-semibold">Sign up</button>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Toggle between Login and Register -->
+            <div class="text-center mt-6">
+                <p class="text-gray-600">
+                    Already have an account? 
+                    <button id="toggle-auth" class="text-amber-600 hover:text-amber-700 font-semibold">Sign in</button>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class AuthSystem {
+            constructor() {
+                this.currentStep = 1;
+                this.selectedRole = null;
+                this.isLoginMode = false;
+                
+                this.init();
+            }
+            
+            init() {
+                this.initializeNeuralBackground();
+                this.initializeAnimations();
+                this.bindEvents();
+            }
+            
+            initializeNeuralBackground() {
+                new p5((p) => {
+                    let nodes = [];
+                    let connections = [];
+                    
+                    p.setup = () => {
+                        let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                        canvas.parent('neural-bg');
+                        
+                        // Create nodes
+                        for (let i = 0; i < 30; i++) {
+                            nodes.push({
+                                x: p.random(p.width),
+                                y: p.random(p.height),
+                                vx: p.random(-0.3, 0.3),
+                                vy: p.random(-0.3, 0.3),
+                                size: p.random(2, 4)
+                            });
+                        }
+                    };
+                    
+                    p.draw = () => {
+                        p.clear();
+                        
+                        // Update and draw nodes
+                        for (let node of nodes) {
+                            node.x += node.vx;
+                            node.y += node.vy;
+                            
+                            // Wrap around edges
+                            if (node.x < 0) node.x = p.width;
+                            if (node.x > p.width) node.x = 0;
+                            if (node.y < 0) node.y = p.height;
+                            if (node.y > p.height) node.y = 0;
+                            
+                            // Draw node
+                            p.fill(26, 35, 50, 80);
+                            p.noStroke();
+                            p.circle(node.x, node.y, node.size);
+                        }
+                        
+                        // Draw connections
+                        p.stroke(186, 134, 11, 30);
+                        p.strokeWeight(1);
+                        for (let i = 0; i < nodes.length; i++) {
+                            for (let j = i + 1; j < nodes.length; j++) {
+                                let dist = p.dist(nodes[i].x, nodes[i].y, nodes[j].x, nodes[j].y);
+                                if (dist < 120) {
+                                    p.line(nodes[i].x, nodes[i].y, nodes[j].x, nodes[j].y);
+                                }
+                            }
+                        }
+                    };
+                    
+                    p.windowResized = () => {
+                        p.resizeCanvas(p.windowWidth, p.windowHeight);
+                    };
+                });
+            }
+            
+            initializeAnimations() {
+                // Split text for character animations
+                Splitting();
+                
+                // Animate hero text
+                anime({
+                    targets: '[data-splitting] .char',
+                    translateY: [-50, 0],
+                    opacity: [0, 1],
+                    easing: 'easeOutExpo',
+                    duration: 1200,
+                    delay: (el, i) => 20 * i
+                });
+            }
+            
+            bindEvents() {
+                // Role selection
+                document.querySelectorAll('.role-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        this.selectRole(card.dataset.role);
+                    });
+                });
+                
+                // Step navigation
+                document.getElementById('next-step-1').addEventListener('click', () => this.nextStep());
+                document.getElementById('next-step-2').addEventListener('click', () => this.nextStep());
+                document.getElementById('back-step-2').addEventListener('click', () => this.prevStep());
+                document.getElementById('back-step-3').addEventListener('click', () => this.prevStep());
+                
+                // Form submissions
+                document.getElementById('security-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.completeRegistration();
+                });
+                
+                document.getElementById('login-form-element').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleLogin();
+                });
+                
+                // Toggle between login and register
+                document.getElementById('toggle-auth').addEventListener('click', () => this.toggleAuthMode());
+                document.getElementById('show-register').addEventListener('click', () => this.toggleAuthMode());
+                
+                // Password visibility toggles
+                document.getElementById('toggle-password').addEventListener('click', () => this.togglePassword('password', 'toggle-password'));
+                document.getElementById('toggle-login-password').addEventListener('click', () => this.togglePassword('login-password', 'toggle-login-password'));
+                
+                // Password strength checker
+                document.getElementById('password').addEventListener('input', (e) => this.checkPasswordStrength(e.target.value));
+                
+                // Form validation
+                document.getElementById('basic-info-form').addEventListener('input', () => this.validateStep2());
+                document.getElementById('security-form').addEventListener('input', () => this.validateStep3());
+            }
+            
+            selectRole(role) {
+                this.selectedRole = role;
+                
+                // Update UI
+                document.querySelectorAll('.role-card').forEach(card => {
+                    card.classList.remove('selected');
+                });
+                document.querySelector(`[data-role="${role}"]`).classList.add('selected');
+                
+                // Enable continue button
+                const nextBtn = document.getElementById('next-step-1');
+                nextBtn.disabled = false;
+                nextBtn.className = nextBtn.className.replace('bg-gray-400 cursor-not-allowed', 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700');
+            }
+            
+            nextStep() {
+                if (this.currentStep < 3) {
+                    // Hide current step
+                    document.getElementById(`step-${this.currentStep}`).classList.remove('active');
+                    
+                    // Show next step
+                    this.currentStep++;
+                    document.getElementById(`step-${this.currentStep}`).classList.add('active');
+                    
+                    // Update progress
+                    this.updateProgress();
+                    
+                    // Animate step transition
+                    anime({
+                        targets: `#step-${this.currentStep}`,
+                        translateX: [50, 0],
+                        opacity: [0, 1],
+                        easing: 'easeOutQuart',
+                        duration: 500
+                    });
+                }
+            }
+            
+            prevStep() {
+                if (this.currentStep > 1) {
+                    // Hide current step
+                    document.getElementById(`step-${this.currentStep}`).classList.remove('active');
+                    
+                    // Show previous step
+                    this.currentStep--;
+                    document.getElementById(`step-${this.currentStep}`).classList.add('active');
+                    
+                    // Update progress
+                    this.updateProgress();
+                    
+                    // Animate step transition
+                    anime({
+                        targets: `#step-${this.currentStep}`,
+                        translateX: [-50, 0],
+                        opacity: [0, 1],
+                        easing: 'easeOutQuart',
+                        duration: 500
+                    });
+                }
+            }
+            
+            updateProgress() {
+                const progress = (this.currentStep / 3) * 100;
+                document.getElementById('progress-bar').style.width = `${progress}%`;
+                document.getElementById('progress-text').textContent = `Step ${this.currentStep} of 3`;
+            }
+            
+            validateStep2() {
+                const form = document.getElementById('basic-info-form');
+                const nextBtn = document.getElementById('next-step-2');
+                
+                const requiredFields = form.querySelectorAll('[required]');
+                let isValid = true;
+                
+                requiredFields.forEach(field => {
+                    if (!field.value.trim()) {
+                        isValid = false;
+                    }
+                });
+                
+                nextBtn.disabled = !isValid;
+            }
+            
+            validateStep3() {
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirm-password').value;
+                const terms = document.getElementById('terms').checked;
+                const submitBtn = document.getElementById('complete-registration');
+                
+                const isValid = password.length >= 8 && password === confirmPassword && terms;
+                submitBtn.disabled = !isValid;
+            }
+            
+            checkPasswordStrength(password) {
+                const strengthBar = document.getElementById('strength-bar');
+                const strengthText = document.getElementById('strength-text');
+                const strengthDiv = document.getElementById('password-strength');
+                
+                if (password.length === 0) {
+                    strengthDiv.classList.add('hidden');
+                    return;
+                }
+                
+                strengthDiv.classList.remove('hidden');
+                
+                let strength = 0;
+                
+                if (password.length >= 8) strength++;
+                if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
+                if (password.match(/[0-9]/)) strength++;
+                if (password.match(/[^a-zA-Z0-9]/)) strength++;
+                
+                const strengthClasses = ['strength-weak', 'strength-medium', 'strength-strong'];
+                const strengthLabels = ['Weak', 'Medium', 'Strong'];
+                
+                strengthBar.className = 'password-strength rounded-full ' + strengthClasses[Math.min(strength - 1, 2)];
+                strengthText.textContent = strengthLabels[Math.min(strength - 1, 2)];
+            }
+            
+            togglePassword(inputId, buttonId) {
+                const input = document.getElementById(inputId);
+                const button = document.getElementById(buttonId);
+                
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    button.innerHTML = `
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
+                        </svg>
+                    `;
+                } else {
+                    input.type = 'password';
+                    button.innerHTML = `
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                    `;
+                }
+            }
+            
+            toggleAuthMode() {
+                this.isLoginMode = !this.isLoginMode;
+                
+                if (this.isLoginMode) {
+                    // Show login form
+                    document.querySelectorAll('.form-step').forEach(step => step.classList.remove('active'));
+                    document.getElementById('login-form').classList.add('active');
+                    document.getElementById('progress-bar').style.width = '100%';
+                    document.getElementById('progress-text').textContent = 'Login';
+                    document.getElementById('toggle-auth').textContent = 'Sign up';
+                } else {
+                    // Show registration form
+                    document.getElementById('login-form').classList.remove('active');
+                    document.getElementById('step-1').classList.add('active');
+                    this.currentStep = 1;
+                    this.updateProgress();
+                    document.getElementById('toggle-auth').textContent = 'Sign in';
+                }
+            }
+            
+            completeRegistration() {
+                const formData = {
+                    role: this.selectedRole,
+                    firstName: document.getElementById('first-name').value,
+                    lastName: document.getElementById('last-name').value,
+                    email: document.getElementById('email').value,
+                    institution: document.getElementById('institution').value,
+                    major: document.getElementById('major').value,
+                    password: document.getElementById('password').value,
+                    newsletter: document.getElementById('newsletter').checked
+                };
+                
+                // Simulate registration
+                this.showLoadingState('complete-registration');
+                
+                setTimeout(() => {
+                    this.saveUserData(formData);
+                    this.showSuccessMessage('Registration successful! Redirecting to dashboard...');
+                    
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 2000);
+                }, 2000);
+            }
+            
+            handleLogin() {
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
+                
+                // Simulate login
+                this.showLoadingState('login-form-element');
+                
+                setTimeout(() => {
+                    const userData = this.getUserData(email);
+                    if (userData && userData.password === password) {
+                        this.showSuccessMessage('Login successful! Redirecting to dashboard...');
+                        
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 1500);
+                    } else {
+                        this.showErrorMessage('Invalid email or password');
+                    }
+                }, 1500);
+            }
+            
+            showLoadingState(buttonId) {
+                const button = document.getElementById(buttonId);
+                const originalText = button.textContent;
+                button.textContent = 'Processing...';
+                button.disabled = true;
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.disabled = false;
+                }, 2000);
+            }
+            
+            showSuccessMessage(message) {
+                this.showNotification(message, 'success');
+            }
+            
+            showErrorMessage(message) {
+                this.showNotification(message, 'error');
+            }
+            
+            showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.className = `fixed top-4 right-4 z-50 max-w-sm p-4 rounded-xl shadow-lg transform translate-x-full transition-transform duration-300`;
+                
+                const colors = {
+                    success: 'bg-green-500 text-white',
+                    error: 'bg-red-500 text-white',
+                    info: 'bg-blue-500 text-white',
+                    warning: 'bg-amber-500 text-white'
+                };
+                
+                notification.className += ` ${colors[type]}`;
+                notification.textContent = message;
+                
+                document.body.appendChild(notification);
+                
+                // Animate in
+                setTimeout(() => {
+                    notification.style.transform = 'translateX(0)';
+                }, 100);
+                
+                // Animate out and remove
+                setTimeout(() => {
+                    notification.style.transform = 'translateX(100%)';
+                    setTimeout(() => {
+                        if (document.body.contains(notification)) {
+                            document.body.removeChild(notification);
+                        }
+                    }, 300);
+                }, 4000);
+            }
+            
+            saveUserData(userData) {
+                const users = JSON.parse(localStorage.getItem('apolloai-users') || '[]');
+                users.push(userData);
+                localStorage.setItem('apolloai-users', JSON.stringify(users));
+                localStorage.setItem('apolloai-current-user', JSON.stringify(userData));
+            }
+            
+            getUserData(email) {
+                const users = JSON.parse(localStorage.getItem('apolloai-users') || '[]');
+                return users.find(user => user.email === email);
+            }
+        }
+        
+        // Initialize auth system when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            window.authSystem = new AuthSystem();
+        });
+    </script>
+</body>
+</html>
