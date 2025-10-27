@@ -1,0 +1,51 @@
+name: Smoke test preview deployment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      preview_url:
+        description: 'Optional preview URL to test (overrides secret PREVIEW_BASE_URL)'
+        required: false
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies (none required)
+        run: |
+          if [ -f package.json ]; then npm ci; fi
+
+      # Set BASE_URL from input if provided
+      - name: Set BASE_URL from workflow input
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.preview_url != '' }}
+        run: echo "BASE_URL=${{ github.event.inputs.preview_url }}" >> $GITHUB_ENV
+
+      # Set BASE_URL from secret if no input URL and secret exists
+      - name: Set BASE_URL from secret
+        if: ${{ (github.event_name != 'workflow_dispatch' || github.event.inputs.preview_url == '') && secrets.PREVIEW_BASE_URL != '' }}
+        run: echo "BASE_URL=${{ secrets.PREVIEW_BASE_URL }}" >> $GITHUB_ENV
+
+      # Validate that we have a URL to test against
+      - name: Validate URL is set
+        if: ${{ !env.BASE_URL }}
+        run: |
+          echo "No preview URL specified. Set PREVIEW_BASE_URL secret or pass preview_url when dispatching."
+          exit 1
+
+      # Run the smoke test with the determined URL
+      - name: Run smoke test
+        env:
+          SMOKE_TEST_TOKEN: ${{ secrets.SMOKE_TEST_TOKEN }}
+        run: |
+          echo "Running smoke test against ${{ env.BASE_URL }}"
+          node scripts/smoke-test.js --base "${{ env.BASE_URL }}" --token "${{ env.SMOKE_TEST_TOKEN }}"

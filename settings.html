@@ -132,11 +132,30 @@
         .notification-item:hover {
             background-color: rgba(186, 134, 11, 0.05);
         }
+
+        /* Toast styles */
+        #toast-container .toast {
+            min-width: 220px;
+            max-width: 320px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(16,24,40,0.12);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateX(20px);
+            opacity: 0;
+            transition: transform 260ms ease, opacity 260ms ease;
+        }
+        #toast-container .toast.show { transform: translateX(0); opacity: 1; }
+        #toast-container .toast .icon { width:18px; height:18px; flex: none; }
     </style>
 </head>
 <body>
     <!-- Neural Network Background -->
     <div id="neural-bg"></div>
+    <!-- Toast container for nicer toasts -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-3"></div>
     
     <!-- Navigation -->
     <nav class="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
@@ -189,37 +208,38 @@
                     <div class="space-y-6">
                         <div class="text-center">
                             <img src="resources/user-avatars/academic-avatars.jpg" alt="Profile" class="w-24 h-24 rounded-full mx-auto mb-4 object-cover">
-                            <button class="text-amber-600 hover:text-amber-700 font-medium">Change Photo</button>
+                            <button id="change-photo" class="text-amber-600 hover:text-amber-700 font-medium">Change Photo</button>
                         </div>
                         
-                        <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
-                                <input type="text" value="Alex" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+                                <input id="profile-firstName" type="text" value="Alex" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-                                <input type="text" value="Johnson" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+                                <input id="profile-lastName" type="text" value="Johnson" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent">
                             </div>
                         </div>
                         
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                            <input type="email" value="alex.johnson@university.edu" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+                            <input id="profile-email" type="email" value="alex.johnson@university.edu" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent" disabled>
                         </div>
                         
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Institution</label>
-                            <input type="text" value="Stanford University" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+                            <input id="profile-institution" type="text" value="Stanford University" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent">
                         </div>
                         
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Major</label>
-                            <input type="text" value="Computer Science" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+                            <input id="profile-major" type="text" value="Computer Science" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent">
                         </div>
                         
-                        <button class="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-white py-2 rounded-lg font-medium hover:from-amber-600 hover:to-amber-700 transition-colors">
-                            Save Changes
+                        <button id="profile-save-btn" class="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white py-2 rounded-lg font-medium hover:from-amber-600 hover:to-amber-700 transition-colors">
+                            <svg id="profile-save-spinner" class="hidden animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+                            <span id="profile-save-text">Save Changes</span>
                         </button>
                     </div>
                 </div>
@@ -232,15 +252,15 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-4">Theme</label>
                             <div class="grid grid-cols-3 gap-3">
-                                <div class="theme-option border-2 border-gray-200 rounded-lg p-3 text-center active" data-theme="light">
+                                <div id="theme-light" class="theme-option border-2 border-gray-200 rounded-lg p-3 text-center active" data-theme="light">
                                     <div class="w-8 h-8 bg-white border border-gray-300 rounded mx-auto mb-2"></div>
                                     <span class="text-sm font-medium">Light</span>
                                 </div>
-                                <div class="theme-option border-2 border-gray-200 rounded-lg p-3 text-center" data-theme="dark">
+                                <div id="theme-dark" class="theme-option border-2 border-gray-200 rounded-lg p-3 text-center" data-theme="dark">
                                     <div class="w-8 h-8 bg-gray-800 rounded mx-auto mb-2"></div>
                                     <span class="text-sm font-medium">Dark</span>
                                 </div>
-                                <div class="theme-option border-2 border-gray-200 rounded-lg p-3 text-center" data-theme="auto">
+                                <div id="theme-auto" class="theme-option border-2 border-gray-200 rounded-lg p-3 text-center" data-theme="auto">
                                     <div class="w-8 h-8 bg-gradient-to-r from-white to-gray-800 rounded mx-auto mb-2"></div>
                                     <span class="text-sm font-medium">Auto</span>
                                 </div>
@@ -250,10 +270,10 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-4">Accent Color</label>
                             <div class="grid grid-cols-4 gap-3">
-                                <div class="w-10 h-10 bg-amber-600 rounded-lg cursor-pointer border-2 border-amber-600" data-color="amber"></div>
-                                <div class="w-10 h-10 bg-blue-600 rounded-lg cursor-pointer border-2 border-transparent hover:border-blue-600" data-color="blue"></div>
-                                <div class="w-10 h-10 bg-green-600 rounded-lg cursor-pointer border-2 border-transparent hover:border-green-600" data-color="green"></div>
-                                <div class="w-10 h-10 bg-purple-600 rounded-lg cursor-pointer border-2 border-transparent hover:border-purple-600" data-color="purple"></div>
+                                <div id="accent-amber" class="w-10 h-10 bg-amber-600 rounded-lg cursor-pointer border-2 border-amber-600" data-color="amber"></div>
+                                <div id="accent-blue" class="w-10 h-10 bg-blue-600 rounded-lg cursor-pointer border-2 border-transparent hover:border-blue-600" data-color="blue"></div>
+                                <div id="accent-green" class="w-10 h-10 bg-green-600 rounded-lg cursor-pointer border-2 border-transparent hover:border-green-600" data-color="green"></div>
+                                <div id="accent-purple" class="w-10 h-10 bg-purple-600 rounded-lg cursor-pointer border-2 border-transparent hover:border-purple-600" data-color="purple"></div>
                             </div>
                         </div>
                         
@@ -301,7 +321,7 @@
                         
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Preferred Study Technique</label>
-                            <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+                            <select id="preferred-technique" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent">
                                 <option value="pomodoro">Pomodoro Technique</option>
                                 <option value="spaced">Spaced Repetition</option>
                                 <option value="feynman">Feynman Technique</option>
@@ -339,7 +359,7 @@
                                     <p class="text-sm text-gray-600">Get notified about upcoming deadlines</p>
                                 </div>
                                 <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" class="sr-only peer" checked>
+                                    <input id="notify-assignment-reminders" type="checkbox" class="sr-only peer" checked>
                                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
                                 </label>
                             </div>
@@ -352,7 +372,7 @@
                                     <p class="text-sm text-gray-600">Gentle reminders to take breaks</p>
                                 </div>
                                 <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" class="sr-only peer" checked>
+                                    <input id="notify-break-reminders" type="checkbox" class="sr-only peer" checked>
                                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
                                 </label>
                             </div>
@@ -365,7 +385,7 @@
                                     <p class="text-sm text-gray-600">Celebrate your learning milestones</p>
                                 </div>
                                 <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" class="sr-only peer" checked>
+                                    <input id="notify-achievement-unlocks" type="checkbox" class="sr-only peer" checked>
                                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
                                 </label>
                             </div>
@@ -378,7 +398,7 @@
                                     <p class="text-sm text-gray-600">Summary of your study progress</p>
                                 </div>
                                 <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" class="sr-only peer">
+                                    <input id="notify-weekly-reports" type="checkbox" class="sr-only peer">
                                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
                                 </label>
                             </div>
@@ -389,11 +409,11 @@
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-xs text-gray-600 mb-1">From</label>
-                                    <input type="time" value="22:00" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm">
+                                    <input id="quiet-from" type="time" value="22:00" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm">
                                 </div>
                                 <div>
                                     <label class="block text-xs text-gray-600 mb-1">To</label>
-                                    <input type="time" value="08:00" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm">
+                                    <input id="quiet-to" type="time" value="08:00" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm">
                                 </div>
                             </div>
                         </div>
@@ -584,6 +604,8 @@
                 this.initializeNeuralBackground();
                 this.bindEvents();
                 this.loadCurrentSettings();
+                // If authenticated, try to load server-side settings to override local defaults
+                this.fetchSettingsFromServer();
                 this.initializeSliders();
             }
             
@@ -676,12 +698,31 @@
                         this.saveSettings();
                     });
                 });
-                
-                // Save profile changes
-                document.querySelector('button:contains("Save Changes")') || 
-                document.querySelector('.settings-card button').addEventListener('click', () => {
-                    this.saveProfile();
+
+                // Preferred technique change
+                const pref = document.getElementById('preferred-technique');
+                if (pref) pref.addEventListener('change', (e) => {
+                    this.settings['preferred-technique'] = e.target.value;
+                    this.saveSettings();
                 });
+
+                // Quiet hours change
+                const qFrom = document.getElementById('quiet-from');
+                const qTo = document.getElementById('quiet-to');
+                if (qFrom) qFrom.addEventListener('change', (e) => { this.settings['quiet-from'] = e.target.value; this.saveSettings(); });
+                if (qTo) qTo.addEventListener('change', (e) => { this.settings['quiet-to'] = e.target.value; this.saveSettings(); });
+                
+                // Save profile changes - find the Profile Settings card and its Save button
+                try {
+                    const cards = Array.from(document.querySelectorAll('.settings-card'));
+                    let profileCard = cards.find(c => (c.querySelector('h2') || {}).textContent?.trim().toLowerCase().includes('profile')) || cards[0];
+                    const saveBtn = profileCard.querySelector('button');
+                    if (saveBtn) saveBtn.addEventListener('click', (e) => { e.preventDefault(); this.saveProfile(); });
+                } catch (err) {
+                    // fallback: attach to first button found
+                    const fallback = document.querySelector('.settings-card button');
+                    if (fallback) fallback.addEventListener('click', (e) => { e.preventDefault(); this.saveProfile(); });
+                }
                 
                 // Achievement hover effects
                 document.querySelectorAll('.achievement-card').forEach(card => {
@@ -763,6 +804,28 @@
                         }
                     }
                 });
+
+                // Preferred technique
+                if (this.settings['preferred-technique']) {
+                    const sel = document.getElementById('preferred-technique');
+                    if (sel) sel.value = this.settings['preferred-technique'];
+                }
+
+                // Notification checkboxes
+                ['notify-assignment-reminders','notify-break-reminders','notify-achievement-unlocks','notify-weekly-reports'].forEach(id => {
+                    if (id in this.settings) {
+                        const el = document.getElementById(id);
+                        if (el && el.type === 'checkbox') el.checked = !!this.settings[id];
+                    }
+                });
+
+                // Quiet hours
+                if (this.settings['quiet-from']) {
+                    const el = document.getElementById('quiet-from'); if (el) el.value = this.settings['quiet-from'];
+                }
+                if (this.settings['quiet-to']) {
+                    const el = document.getElementById('quiet-to'); if (el) el.value = this.settings['quiet-to'];
+                }
             }
             
             applyTheme() {
@@ -777,6 +840,24 @@
             
             saveSettings() {
                 localStorage.setItem('apolloai-settings', JSON.stringify(this.settings));
+                // If user is authenticated, attempt to persist settings server-side
+                const token = localStorage.getItem('apolloai-token');
+                if (token) {
+                    fetch('/api/settings', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                        body: JSON.stringify(this.settings)
+                    }).then(r => r.json()).then(j => {
+                        if (j && j.ok) {
+                            this.showNotification('Settings saved to server', 'success');
+                        } else {
+                            this.showNotification('Server rejected settings save: ' + (j && j.error), 'error');
+                        }
+                    }).catch(err => {
+                        console.warn('Failed to save settings to server, kept locally', err);
+                        this.showNotification('Failed to save settings to server, kept locally', 'warning');
+                    });
+                }
             }
             
             loadSettings() {
@@ -795,57 +876,118 @@
             
             saveProfile() {
                 // Animate save button
-                const button = document.querySelector('.settings-card button');
-                const originalText = button.textContent;
-                
-                button.textContent = 'Saving...';
-                button.disabled = true;
-                
-                // Simulate save operation
-                setTimeout(() => {
-                    button.textContent = 'Saved!';
-                    button.className = button.className.replace('from-amber-500 to-amber-600', 'from-green-500 to-green-600');
-                    
+                const btn = document.getElementById('profile-save-btn');
+                const spinner = document.getElementById('profile-save-spinner');
+                const textEl = document.getElementById('profile-save-text');
+                const originalText = textEl ? textEl.textContent : 'Save Changes';
+
+                // Gather explicit fields
+                const payload = {
+                    firstName: (document.getElementById('profile-firstName') || {}).value || '',
+                    lastName: (document.getElementById('profile-lastName') || {}).value || '',
+                    institution: (document.getElementById('profile-institution') || {}).value || '',
+                    major: (document.getElementById('profile-major') || {}).value || ''
+                };
+
+                // Basic validation: at least one field must be present
+                if (!payload.firstName && !payload.lastName && !payload.institution && !payload.major) {
+                    this.showNotification('Please enter at least one profile field to update.', 'warning');
+                    return;
+                }
+
+                // UI busy state
+                if (btn) btn.disabled = true;
+                if (spinner) spinner.classList.remove('hidden');
+                if (textEl) textEl.textContent = 'Saving...';
+
+                const token = localStorage.getItem('apolloai-token');
+                if (token) {
+                    fetch('/api/update-profile', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                        body: JSON.stringify(payload)
+                    }).then(r => r.json()).then(j => {
+                        if (j && j.ok && j.user) {
+                            localStorage.setItem('apolloai-current-user', JSON.stringify(j.user));
+                            this.showNotification('Profile updated successfully!', 'success');
+                        } else {
+                            this.showNotification('Failed to update profile on server: ' + (j && j.error), 'error');
+                        }
+                    }).catch(err => {
+                        console.warn('Profile save failed', err);
+                        this.showNotification('Profile save failed (server unreachable).', 'error');
+                    }).finally(() => {
+                        if (btn) btn.disabled = false;
+                        if (spinner) spinner.classList.add('hidden');
+                        if (textEl) textEl.textContent = originalText;
+                    });
+                } else {
+                    // Local fallback
                     setTimeout(() => {
-                        button.textContent = originalText;
-                        button.disabled = false;
-                        button.className = button.className.replace('from-green-500 to-green-600', 'from-amber-500 to-amber-600');
-                    }, 2000);
-                }, 1000);
-                
-                this.showNotification('Profile updated successfully!', 'success');
+                        if (btn) btn.disabled = false;
+                        if (spinner) spinner.classList.add('hidden');
+                        if (textEl) textEl.textContent = 'Saved!';
+                        setTimeout(() => { if (textEl) textEl.textContent = originalText; }, 1200);
+                    }, 600);
+                    this.showNotification('Profile saved locally.', 'success');
+                }
+            }
+
+            // Attempt to load settings from server when token exists
+            async fetchSettingsFromServer() {
+                const token = localStorage.getItem('apolloai-token');
+                if (!token) return;
+                try {
+                    const r = await fetch('/api/settings', { headers: { 'Authorization': 'Bearer ' + token } });
+                    if (!r.ok) return;
+                    const j = await r.json();
+                    if (j && j.ok && j.settings) {
+                        this.settings = Object.assign({}, this.settings, j.settings);
+                        this.saveSettings();
+                        this.loadCurrentSettings();
+                    }
+                } catch (err) {
+                    console.warn('Could not fetch settings from server', err);
+                }
             }
             
             showNotification(message, type = 'info') {
-                const notification = document.createElement('div');
-                notification.className = `fixed top-20 right-4 z-50 max-w-sm p-4 rounded-xl shadow-lg transform translate-x-full transition-transform duration-300`;
-                
+                const container = document.getElementById('toast-container') || document.body;
+                const toast = document.createElement('div');
+                toast.className = 'toast ';
+
                 const colors = {
                     success: 'bg-green-500 text-white',
                     error: 'bg-red-500 text-white',
                     info: 'bg-blue-500 text-white',
                     warning: 'bg-amber-500 text-white'
                 };
-                
-                notification.className += ` ${colors[type]}`;
-                notification.textContent = message;
-                
-                document.body.appendChild(notification);
-                
-                // Animate in
+
+                toast.className += colors[type] || colors.info;
+
+                const icon = document.createElement('div');
+                icon.className = 'icon';
+                // simple icon shapes
+                icon.innerHTML = type === 'success' ? '✅' : (type === 'error' ? '⚠️' : (type === 'warning' ? '⚠' : 'ℹ️'));
+
+                const txt = document.createElement('div');
+                txt.className = 'flex-1 text-sm';
+                txt.textContent = message;
+
+                toast.appendChild(icon);
+                toast.appendChild(txt);
+
+                container.appendChild(toast);
+
+                // force reflow then show
+                setTimeout(() => { toast.classList.add('show'); }, 50);
+
+                // Auto-dismiss
+                const timeout = 3800;
                 setTimeout(() => {
-                    notification.style.transform = 'translateX(0)';
-                }, 100);
-                
-                // Animate out and remove
-                setTimeout(() => {
-                    notification.style.transform = 'translateX(100%)';
-                    setTimeout(() => {
-                        if (document.body.contains(notification)) {
-                            document.body.removeChild(notification);
-                        }
-                    }, 300);
-                }, 3000);
+                    toast.classList.remove('show');
+                    setTimeout(() => { if (container.contains(toast)) container.removeChild(toast); }, 300);
+                }, timeout);
             }
         }
         

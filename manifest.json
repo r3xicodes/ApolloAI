@@ -1,0 +1,11 @@
+{
+  "short_name": "ApolloAI",
+  "name": "ApolloAI - Smart Study Planner",
+  "icons": [
+    { "src": "/resources/achievement-badge.svg", "sizes": "96x96", "type": "image/svg+xml" }
+  ],
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#faf9f6",
+  "theme_color": "#1a2332"
+}

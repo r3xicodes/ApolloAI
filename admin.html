@@ -1,0 +1,125 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>ApolloAI — Admin</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:20px;background:#f7f8fb;color:#111}
+    header{display:flex;justify-content:space-between;align-items:center}
+    .card{background:#fff;border:1px solid #e6e9ef;padding:16px;border-radius:8px;margin-top:12px}
+    pre{white-space:pre-wrap}
+    button{padding:8px 12px;border-radius:6px;border:1px solid #cbd5e1;background:#f1f5f9}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>ApolloAI — Admin</h1>
+    <div>
+      <button id="logoutBtn">Logout</button>
+    </div>
+  </header>
+
+  <section class="card">
+    <h3>Current session</h3>
+    <div id="sessionInfo">Loading...</div>
+  </section>
+
+  <section class="card">
+    <h3>Users</h3>
+    <div style="margin-bottom:8px">
+      <button id="refreshBtn">Refresh users</button>
+    </div>
+    <div id="usersList">No users yet.</div>
+  </section>
+
+  <script>
+    const sessionInfo = document.getElementById('sessionInfo');
+    const usersList = document.getElementById('usersList');
+
+    function showSession() {
+      const u = localStorage.getItem('apolloai-current-user');
+      const t = localStorage.getItem('apolloai-token');
+      if (!u) {
+        sessionInfo.innerHTML = '<em>Not logged in. Use login.html to authenticate.</em>';
+        return;
+      }
+      const user = JSON.parse(u);
+      sessionInfo.innerHTML = `<strong>${user.firstName || ''} ${user.lastName || ''}</strong> — role: <code>${user.role || 'student'}</code><br/><small>Token: ${t ? '<em>present</em>' : '<em>not set</em>'}</small>`;
+    }
+
+    async function fetchUsers() {
+      usersList.innerHTML = 'Loading...';
+      const token = localStorage.getItem('apolloai-token');
+      try {
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const r = await fetch('/api/users', { headers });
+        if (!r.ok) {
+          const t = await r.json().catch(()=>({}));
+          usersList.innerHTML = `<em>Request failed: ${r.status} ${t.error||''}</em>`;
+          return;
+        }
+        const users = await r.json();
+        if (!Array.isArray(users) || users.length === 0) {
+          usersList.innerHTML = '<em>No users returned.</em>';
+          return;
+        }
+        usersList.innerHTML = '';
+        users.forEach(u => {
+          const d = document.createElement('div');
+          d.style.borderBottom = '1px solid #eef2ff';
+          d.style.padding = '8px 0';
+          d.innerHTML = `<strong>${u.firstName||''} ${u.lastName||''}</strong> — <code>${u.email}</code> — role: <code id="role-${u.id}">${u.role||'student'}</code><br/><small>id: ${u.id}</small>`;
+          const btnWrap = document.createElement('div');
+          btnWrap.style.marginTop = '6px';
+          const promote = document.createElement('button');
+          promote.textContent = 'Promote to teacher';
+          promote.style.marginRight = '8px';
+          promote.onclick = () => updateUserRole(u.id, 'teacher');
+          const demote = document.createElement('button');
+          demote.textContent = 'Demote to student';
+          demote.onclick = () => updateUserRole(u.id, 'student');
+          btnWrap.appendChild(promote);
+          btnWrap.appendChild(demote);
+          d.appendChild(btnWrap);
+          usersList.appendChild(d);
+        });
+      } catch (err) {
+        usersList.innerHTML = `<em>Error fetching users: ${String(err)}</em>`;
+      }
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click', fetchUsers);
+    document.getElementById('logoutBtn').addEventListener('click', ()=>{
+      localStorage.removeItem('apolloai-current-user');
+      localStorage.removeItem('apolloai-token');
+      showSession();
+    });
+
+    showSession();
+    // auto load
+    fetchUsers();
+
+    async function updateUserRole(id, role) {
+      const token = localStorage.getItem('apolloai-token');
+      const body = { id, role };
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const r = await fetch('/api/update-user', { method: 'POST', headers, body: JSON.stringify(body) });
+        const j = await r.json().catch(()=>({}));
+        if (!r.ok) {
+          alert('Update failed: ' + (j.error || r.status));
+          return;
+        }
+        // update UI
+        const roleEl = document.getElementById(`role-${id}`);
+        if (roleEl) roleEl.textContent = role;
+        alert('User role updated');
+      } catch (err) {
+        alert('Update error: ' + String(err));
+      }
+    }
+  </script>
+</body>
+</html>

@@ -716,39 +716,71 @@
                     password: document.getElementById('password').value,
                     newsletter: document.getElementById('newsletter').checked
                 };
-                
-                // Simulate registration
+
+                // Try server-side registration first
                 this.showLoadingState('complete-registration');
-                
-                setTimeout(() => {
+
+                fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                }).then(r => r.json()).then(resp => {
+                    if (resp && resp.ok && resp.user) {
+                        // store safe user locally as current user
+                        localStorage.setItem('apolloai-current-user', JSON.stringify(resp.user));
+                            if (resp.token) localStorage.setItem('apolloai-token', resp.token);
+                        this.showSuccessMessage('Registration successful! Redirecting to dashboard...');
+                        setTimeout(() => { window.location.href = 'index.html'; }, 1500);
+                    } else {
+                        // fallback: save locally
+                        this.saveUserData(formData);
+                        this.showSuccessMessage('Registration saved locally. Redirecting to dashboard...');
+                        setTimeout(() => { window.location.href = 'index.html'; }, 1500);
+                    }
+                }).catch(err => {
+                    console.warn('Registration failed, saving locally:', err);
                     this.saveUserData(formData);
-                    this.showSuccessMessage('Registration successful! Redirecting to dashboard...');
-                    
-                    setTimeout(() => {
-                        window.location.href = 'index.html';
-                    }, 2000);
-                }, 2000);
+                    this.showSuccessMessage('Registration saved locally. Redirecting to dashboard...');
+                    setTimeout(() => { window.location.href = 'index.html'; }, 1500);
+                });
             }
             
             handleLogin() {
                 const email = document.getElementById('login-email').value;
                 const password = document.getElementById('login-password').value;
                 
-                // Simulate login
+                // Try server-side login
                 this.showLoadingState('login-form-element');
-                
-                setTimeout(() => {
+                fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                }).then(r => r.json()).then(resp => {
+                    if (resp && resp.ok && resp.user) {
+                        localStorage.setItem('apolloai-current-user', JSON.stringify(resp.user));
+                            if (resp.token) localStorage.setItem('apolloai-token', resp.token);
+                        this.showSuccessMessage('Login successful! Redirecting to dashboard...');
+                        setTimeout(() => { window.location.href = 'index.html'; }, 1200);
+                    } else {
+                        // fallback to local check
+                        const userData = this.getUserData(email);
+                        if (userData && userData.password === password) {
+                            this.showSuccessMessage('Login successful (local)! Redirecting...');
+                            setTimeout(() => { window.location.href = 'index.html'; }, 1200);
+                        } else {
+                            this.showErrorMessage(resp.error || 'Invalid email or password');
+                        }
+                    }
+                }).catch(err => {
+                    console.warn('Login request failed, trying local auth:', err);
                     const userData = this.getUserData(email);
                     if (userData && userData.password === password) {
-                        this.showSuccessMessage('Login successful! Redirecting to dashboard...');
-                        
-                        setTimeout(() => {
-                            window.location.href = 'index.html';
-                        }, 1500);
+                        this.showSuccessMessage('Login successful (local)! Redirecting...');
+                        setTimeout(() => { window.location.href = 'index.html'; }, 1200);
                     } else {
                         this.showErrorMessage('Invalid email or password');
                     }
-                }, 1500);
+                });
             }
             
             showLoadingState(buttonId) {
