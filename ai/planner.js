@@ -1,8 +1,22 @@
+const { initializeApp } = require('firebase/app');
+const { getVertexAI, getGenerativeModel } = require('firebase/vertex-ai-preview');
+
 // Optional: If you want LLM-backed planning, set AI_API_URL and AI_API_KEY in environment.
 const fetch = global.fetch || require('node-fetch');
 
-let AI_API_URL = process.env.AI_API_URL || process.env.VERCEL_AI_URL || null;
-let AI_API_KEY = process.env.AI_API_KEY || process.env.VERCEL_AI_KEY || null;
+// Initialize Firebase
+const firebaseConfig = {
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.FIREBASE_PROJECT_ID,
+};
+
+let app;
+let vertex;
+if (firebaseConfig.apiKey) {
+  app = initializeApp(firebaseConfig);
+  vertex = getVertexAI(app);
+}
 
 const { DateTime } = (() => {
   try { return require('luxon'); } catch (e) { return {}; }
@@ -78,28 +92,15 @@ function generateSlots(assignment, userProfile = {}, existing = []) {
 }
 
 async function generateSlotsWithOptionalLLM(assignment, userProfile = {}, existing = []) {
-  // If AI_API_URL and AI_API_KEY are set, try asking the LLM first and parse a JSON plan response.
-  if (AI_API_URL && AI_API_KEY) {
+  if (vertex) {
     try {
-      const prompt = `You are a scheduling assistant. Given this assignment object and the user's existing assignments, return a JSON object with a key \\"plan\\" that contains { slots: [{startISO:string, durationHours:number, note:string}], note:string }.\n\nAssignment: ${JSON.stringify(assignment)}\nExistingAssignments: ${JSON.stringify(existing.slice(0,20))}`;
+      const model = getGenerativeModel(vertex, { model: "gemini-pro" });
+      const prompt = `You are a scheduling assistant. Given this assignment object and the user's existing assignments, return a JSON object with a key \"plan\" that contains { slots: [{startISO:string, durationHours:number, note:string}], note:string }.\n\nAssignment: ${JSON.stringify(assignment)}\nExistingAssignments: ${JSON.stringify(existing.slice(0,20))}`;
 
-      const resp = await fetch(AI_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${AI_API_KEY}`
-        },
-        body: JSON.stringify({ prompt })
-      });
-
-      const j = await resp.json();
-
-      // Try to extract plan from common shapes: j.plan, j.output.plan, or parse text
-      if (j.plan) return j.plan;
-      if (j.output && j.output.plan) return j.output.plan;
-
-      // Some LLMs return text; try to extract JSON from text
-      const text = j.text || j.output?.text || JSON.stringify(j);
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+      
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         try {
@@ -111,7 +112,7 @@ async function generateSlotsWithOptionalLLM(assignment, userProfile = {}, existi
         }
       }
     } catch (err) {
-      console.warn('LLM planner failed, falling back to heuristic:', err);
+      console.warn('Firebase AI planner failed, falling back to heuristic:', err);
     }
   }
 
